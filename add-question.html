@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Add a question</title>
-    <link rel="stylesheet" href="navbar.css">
-    <link rel="stylesheet" href="general.css">
-    <link rel="stylesheet" href="cards.css">
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="general.css" />
+    <link rel="stylesheet" href="cards.css" />
   </head>
   <body>
     <ul class="topnav">
-      <li><a  href="index.html">Home</a></li>
+      <li><a href="index.html">Home</a></li>
       <li><a class="active" href="add-question.html">Add questions</a></li>
       <li><a href="make-a-quiz.html">Create a quiz</a></li>
       <li><a href="take-a-quiz.html">Take a quiz</a></li>
@@ -57,14 +57,18 @@
     </form>
 
     <div id="list" class="cards"></div>
+    <script src="configuration.js"></script>
 
     <script>
-      let host = "http://localhost:8080";
+      // let host = "http://localhost:8080";
+      let host = getHost();
       let questions = [];
       displayTheQuestions();
 
       async function getAll() {
-        let response = await fetch(host + "/questions");
+        let response = await fetch(host + "/questions", {
+          headers: { Authorization: `Bearer ${configuration.token()}` },
+        });
         let result = await response.json();
         return result;
       }
@@ -81,10 +85,11 @@
           let div = document.createElement("div");
           div.className = "card";
           let innerHtml = `
-         
-        <img src="http://localhost:8080/questions/${question.id}/image" alt="question" style="width:100%">
+
+        <img src="" alt="question" style="width:100%" id="question-image-${question.id}">
+
         <div class="container">
-          <h4><b>${question.id}</b></h4> 
+          <h4><b>${question.id}</b></h4>
           <p>${question.description}</p>
           <form>
               <input type="radio" id="q${question.id}ptionA" name="q2Answer" value="A">
@@ -94,13 +99,34 @@
               <label for="q${question.id}ptionB">${question.choices[1]}</label><br>
 
               <input type="radio" id="q${question.id}ptionC" name="q2Answer" value="C">
-              <label for="q${question.id}ptionC">${question.choices[2]}</label><br>       
-          </form> 
+              <label for="q${question.id}ptionC">${question.choices[2]}</label><br>
+          </form>
         </div>
-     
+
             `;
           div.innerHTML = innerHtml;
           list.appendChild(div);
+
+          let imgElement = document.getElementById(
+            `question-image-${question.id}`
+          );
+          fetch(`${host}/questions/${question.id}/image`, {
+            headers: { Authorization: `Bearer ${configuration.token()}` },
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("Network response was not ok");
+              }
+              return response.blob();
+            })
+            .then((blob) => {
+              let imageUrl = URL.createObjectURL(blob);
+              imgElement.src = imageUrl;
+            })
+            .catch((error) => {
+              console.error("There was a problem fetching the image:", error);
+              // You can provide a fallback image here if needed
+            });
         }
       }
 
@@ -122,7 +148,7 @@
           case "C":
             question.answer = data.optionC;
             break;
-        }        
+        }
         addTheQuestion(question, data.imageFile);
       }
 
@@ -133,6 +159,7 @@
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${configuration.token()}`,
           },
           body: JSON.stringify(question),
         };
@@ -160,6 +187,7 @@
         let request = {
           method: "POST",
           body: formData,
+          headers: { Authorization: `Bearer ${configuration.token()}` },
         };
         let response = await fetch(
           host + "/questions/" + id + "/image",
