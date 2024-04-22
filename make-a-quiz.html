@@ -150,6 +150,7 @@
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${configuration.token()}`,
             },
             body: JSON.stringify({
               id: quizId,
